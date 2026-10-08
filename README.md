@@ -8,6 +8,17 @@
 
 项目场景用于提供真实问题与约束，不预设现有架构已经完整或合理。案例会分别说明当前做法的价值、失效条件、可选改造与验证方法。单 Agent、固定流程和多 Agent 都可能是正确选择，取决于任务。
 
+## 图解：先学会一个闭环，再增加能力
+
+![先学会一个闭环，再增加能力；基础：任务 → 控制 → 状态；执行：固定步骤 → 反馈循环；运行：图路由 → 等待恢复；协作：委派 → 汇总 → 通知；所有层都要：证据与权限](assets/diagrams/00-learning-map.svg)
+
+**跟着图走：**
+
+1. 先沿前两层理解一个人也能完成的修复任务。
+2. 再按实际需要学习恢复与协作；最下面的证据和权限贯穿全程。
+
+**图的范围：**学习导航：这些是阅读层次，不是每个系统必须依次升级的架构。
+
 ## 从哪里开始
 
 - **第一次系统学习**：按 01–32 顺序读。每读完一部，完成一小次练习，不急着安装更多框架。
@@ -19,6 +30,14 @@
 每课约需 5–12 分钟；代码实验和练习另计。时间仅作阅读安排参考。
 
 每课底部的小练习在 [第 32 课](lessons/32-solutions.md) 按相同编号提供答案与理由；先尝试再查。可运行实验和框架示意分开存放，避免把未运行的 API 片段误当成已验证教程代码。
+
+## 怎样使用图解
+
+教程新增 36 张本地 SVG 图解，直接在 GitHub 页面展示，无需运行代码。每张图只讲一个关键机制，并配有 2–3 步阅读提示。颜色辅助识别角色，文字标签才是含义依据。图中的缩减模型、源码事实和改造建议均在图下标明。
+
+- 按课程读时，先读问题，再沿图走一遍，最后检查反例或小练习。
+- 回顾某个机制时，打开 [图解索引](references/visual-index.md)。图中文字过小时，可以点击图片查看原图。
+- 恢复、权限和消息图是理解协议的入口，不能替代实际故障测试。
 
 ## 学习路线
 
@@ -96,6 +115,12 @@
 - [从 Pure Agent Drive 判断单会话边界](cases/02-pure-agent-drive.md)
 - [Meta Muse 怎样把主动工作与授权分开](cases/03-meta-muse.md)
 - [Multica 怎样让任务板驱动 Agent 执行](cases/04-multica.md)
+- [Multica 的可靠领取与唤醒](cases/05-multica-runtime.md)
+- [Multica 的执行身份与权限边界](cases/06-multica-authority.md)
+- [Claude Code 的工具循环与扩展部件](cases/07-claude-code-runtime.md)
+- [Claude Code 的协作、会话恢复与定时运行](cases/08-claude-code-collaboration.md)
+- [怎样阅读 Claude Code 的公开源码与分析](cases/09-claude-code-source-reading.md)
+- [Claude Code 阅读资源与证据分级](references/claude-code-reading.md)
 - [三类任务应该怎样选择架构](design/scenario-decisions.md)
 
 ## 贯穿案例

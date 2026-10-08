@@ -20,6 +20,18 @@ LangGraph 的基本概念可以用三句话理解：
 
 节点可以运行模型，也可以只是校验字段。你不必把每个节点都叫 Agent。[官方 Graph API](https://docs.langchain.com/oss/python/langgraph/graph-api)
 
+## 图解：节点、状态、边分别回答什么
+
+![节点、状态、边分别回答什么；状态卡：candidate / passed / attempt；节点 verify：读取状态，返回更新；边：读取更新后的 passed 与 attempt；去 report / propose / blocked](../assets/diagrams/13-graph-vocabulary.svg)
+
+**跟着图走：**
+
+1. 先读状态卡，确认当前知道哪些事实。
+2. 节点做工作并返回更新；边再依据更新后的状态选择去向。
+3. 不要把每个节点都当成一个 Agent，verify 可以是普通函数。
+
+**图的范围：**教学模型：只画当前概念；真实系统还需实现正文说明的校验与故障处理。
+
 ## 同一条流程换一种表达
 
 ```mermaid

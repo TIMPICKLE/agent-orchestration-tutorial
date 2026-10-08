@@ -23,6 +23,18 @@ Multica 区分调用授权来源与审计归属。Agent owner、发起者和运�
 
 任务最后进入 `in_review`，只说明交付流程需要审阅，不会自动限制进程此前的所有工具动作。
 
+## 图解：四种权限边界，要分别验证
+
+![四种权限边界，要分别验证；启动权：谁可启动 Agent；平台 API：此 Run 可做什么；操作系统：进程能访问什么；外部连接：用谁的账户与能力；in_review 不替代执行端限制](../assets/diagrams/c06-authority-layers.svg)
+
+**跟着图走：**
+
+1. 先验证请求者有权启动，再看这轮运行的平台身份。
+2. 继续追到操作系统和外部账户，检查真正限制动作的位置。
+3. 不要把最后的人审状态当作执行期间的沙箱。
+
+**图的范围：**Multica 固定版本默认 Run 具有 daemon OS 用户完整权限，不承诺统一文件系统沙箱；Muse 的公开安全保证不可借用。
+
 ## 这个版本需要特别注意的前提
 
 Multica 官方安全文档说明，默认 Run 具有 daemon 所在操作系统用户的完整权限，产品不承诺统一文件系统沙箱。具体平台存在差异，但不能把默认本地执行理解为天然受限。[固定版本安全模型](https://github.com/multica-ai/multica/blob/8db6cfe19ae6fd5c35ec71bd8fea42a3ef3861ec/apps/docs/content/docs/security-model.mdx)

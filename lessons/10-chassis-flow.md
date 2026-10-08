@@ -31,6 +31,18 @@ flowchart TD
 
 公开 ReAct 实现区分迭代、工具调用、批次数量与并行上限，并保留跨重试的任务级行动预算。这让你能看见“同一个限制”其实可能包含多个不同维度。[推理循环源码](https://github.com/TIMPICKLE/devops-agent-chassis/blob/63f8496eac20828f0712c8a53e2299a9b7baf8d8/src/agent_chassis/orchestration/reasoning.py#L285-L377)
 
+## 图解：不要让外层重试重置整项任务预算
+
+![不要让外层重试重置整项任务预算；任务总预算：跨重试累计；外层尝试 1：准备 → 执行 → 收尾；内层：读 → 改 → 测，多次工具动作；外层尝试 2：仍使用剩余任务预算](../assets/diagrams/10-nested-budgets.svg)
+
+**跟着图走：**
+
+1. 先看最外圈，它代表任务总量。
+2. 进入一次外层尝试，再数内层的工具动作。
+3. 外层重试后仍要核对累计消耗，不能把“新尝试”当成免费重开。
+
+**图的范围：**依据本课固定版本的双层循环与任务级行动预算简化；图中不指定实际限额。
+
 ## 上下文里的事实与笔记
 
 `RunContext` 把 `facts`、`model_notes`、工具调用、模型调用和验证记录分开。直观地说：系统核查到什么，模型推测什么，以及程序做过什么，应能区分来源。[上下文定义](https://github.com/TIMPICKLE/devops-agent-chassis/blob/63f8496eac20828f0712c8a53e2299a9b7baf8d8/src/agent_chassis/contracts.py#L347-L458)

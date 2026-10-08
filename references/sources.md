@@ -243,3 +243,26 @@ Squad 的生成协议与后端强制约束应分开解释。数据库竞争控�
 - [LICENSE](https://github.com/multica-ai/multica/blob/8db6cfe19ae6fd5c35ec71bd8fea42a3ef3861ec/LICENSE)
 
 用于说明显式上下文与跨任务记忆的边界。阅读设计不等于获得任意复用全部产品代码的许可。
+
+<a id="p09"></a>
+### P09 Claude Code：公开文档、组件源码与分析资源
+
+核对日期为 **2026 年 10 月 8 日**。下面的官方文档与 `main` 分支会继续变化；涉及子代理、团队、权限模式和定时功能时，应核对自己的版本与运行方式。此次没有运行 Claude Code、调用模型或执行第三方示例。
+
+**官方行为说明：**
+
+- [运行原理与上下文](https://code.claude.com/docs/en/how-claude-code-works)
+- [扩展部件分工](https://code.claude.com/docs/en/features-overview)
+- [子代理](https://code.claude.com/docs/en/sub-agents) · [实验性 Agent teams](https://code.claude.com/docs/en/agent-teams) · [跨会话消息](https://code.claude.com/docs/en/cross-session-messaging)
+- [权限](https://code.claude.com/docs/en/permissions) · [沙箱](https://code.claude.com/docs/en/sandboxing)
+- [会话管理](https://code.claude.com/docs/en/sessions) · [定时任务](https://code.claude.com/docs/en/scheduled-tasks) · [动态工作流](https://code.claude.com/docs/en/workflows)
+
+**可读的官方组件：**
+
+- [Python Agent SDK 源码](https://github.com/anthropics/claude-agent-sdk-python/tree/f7b0b62c2a8d110d4da0eec0aa70cf795ec3afc4/src/claude_agent_sdk)，重点读 [CLI 子进程传输](https://github.com/anthropics/claude-agent-sdk-python/blob/f7b0b62c2a8d110d4da0eec0aa70cf795ec3afc4/src/claude_agent_sdk/_internal/transport/subprocess_cli.py) 和 [请求与控制协议](https://github.com/anthropics/claude-agent-sdk-python/blob/f7b0b62c2a8d110d4da0eec0aa70cf795ec3afc4/src/claude_agent_sdk/_internal/query.py)。这里固定到提交 `f7b0b62c2a8d110d4da0eec0aa70cf795ec3afc4`。它们说明 SDK 与 CLI 的边界，不能证明闭源核心的全部调度实现。
+- [Sandbox Runtime](https://github.com/anthropics/sandbox-runtime/tree/3f0bad7345238f47736435e3f2b064399c1cad74)：官方开放组件，用于研究执行隔离；不是整个 Claude Code 的源码。
+- [Agent SDK 应用示例](https://github.com/anthropics/claude-agent-sdk-demos)：用于理解外围应用设计，不是 CLI 内部实现。
+
+[Claude Code 产品仓库](https://github.com/anthropics/claude-code) 的公开可见性不代表核心运行时以开源许可发布；应分别查看 [产品仓库许可](https://github.com/anthropics/claude-code/blob/main/LICENSE.md) 与 [Python SDK 许可](https://github.com/anthropics/claude-agent-sdk-python/blob/main/LICENSE)。独立分析和教学重建不能作为官方当前实现的直接证据。
+
+完整资源分级与阅读顺序见 [Claude Code 源码与分析阅读指南](claude-code-reading.md)；案例见 [运行循环](../cases/07-claude-code-runtime.md)、[协作与持续运行](../cases/08-claude-code-collaboration.md)、[怎样读源码分析](../cases/09-claude-code-source-reading.md)。

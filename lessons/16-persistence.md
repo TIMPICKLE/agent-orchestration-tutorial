@@ -29,6 +29,18 @@ config = {"configurable": {"thread_id": "demo-1042-run-1"}}
 
 [完整示例](../framework_samples/langgraph_complete.py) 包含 checkpointer 装配、第一次 invoke、检查暂停及第二次 resume。为控制学习成本，它使用内存 saver，只演示同一进程内暂停；不能作为跨重启示例。文件中的回复是脚本构造的模拟输入，不是真实用户授权。
 
+## 图解：等待可以跨执行，恢复必须找到同一状态
+
+![等待可以跨执行，恢复必须找到同一状态；执行 1：保存待审批 → interrupt；持久存储：thread_id + 检查点；执行结束 / 进程退出；执行 2：验证回复 → 同一标识恢复；注意：节点开头可能重新执行](../assets/diagrams/16-checkpoint-resume.svg)
+
+**跟着图走：**
+
+1. 第一段运行保存等待信息后退出，不要求模型一直在线。
+2. 第二段以相同标识找到状态，应用先验证回复再恢复。
+3. 检查重复执行风险：检查点不会自动让通知或 PR 创建恰好一次。
+
+**图的范围：**持久恢复设计示意。本仓库框架示例使用内存 saver，只验证结构，没有验证跨重启恢复。
+
 ## 内存保存不等于跨重启保存
 
 如果使用内存 saver，退出进程后内存就没有了。学习时很好用，不能据此声称已具备崩溃恢复。跨重启要使用适合部署的持久存储，并验证恢复行为。[checkpointer 说明](https://docs.langchain.com/oss/python/langgraph/checkpointers)

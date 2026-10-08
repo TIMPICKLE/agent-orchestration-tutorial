@@ -29,6 +29,18 @@ builder.add_conditional_edges(
 
 接口依据：[LangGraph 图 API 使用指南](https://docs.langchain.com/oss/python/langgraph/use-graph-api)。
 
+## 图解：路由是有顺序的判断
+
+![路由是有顺序的判断；先检查 passed=True → report；否则 attempt<3 → propose；否则 → blocked；未知路由值：拒绝 / 明确错误](../assets/diagrams/15-routing-table.svg)
+
+**跟着图走：**
+
+1. 先判断通过与否，成功时进入报告。
+2. 未通过才看预算，有余量返回提出候选，否则阻塞。
+3. 若路由来自模型，先验证允许值；不要动态赋予未注册能力。
+
+**图的范围：**对应本课条件路由片段；完整图还需注册节点、结束边并移除旧的无条件结束边。
+
 ## 模型可以决定哪些路由
 
 对于“接下来调查输入清洗还是数值转换”，可以让模型提出结构化选择。程序验证候选值属于允许列表，再路由到相应工具或节点。

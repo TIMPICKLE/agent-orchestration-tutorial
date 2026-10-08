@@ -14,7 +14,7 @@
 2. [subprocess_cli.py](https://github.com/anthropics/claude-agent-sdk-python/blob/f7b0b62c2a8d110d4da0eec0aa70cf795ec3afc4/src/claude_agent_sdk/_internal/transport/subprocess_cli.py)：谁启动 CLI、设置工作目录、管理输入输出和退出？
 3. [_internal/query.py](https://github.com/anthropics/claude-agent-sdk-python/blob/f7b0b62c2a8d110d4da0eec0aa70cf795ec3afc4/src/claude_agent_sdk/_internal/query.py)：为什么消息流还需要控制请求、响应 ID 和取消？
 
-**能学到：**封装层、进程边界、流式事件和控制协议。**不能推出：**私有核心模型/工具循环的完整实现。
+**能学到：** 封装层、进程边界、流式事件和控制协议。**不能推出：** 私有核心模型/工具循环的完整实现。
 
 该仓库代码有 [MIT 许可证](https://github.com/anthropics/claude-agent-sdk-python/blob/f7b0b62c2a8d110d4da0eec0aa70cf795ec3afc4/LICENSE)，README 另说明使用条款；不要把 Python 源码许可证扩展到打包的 CLI。SDK 的 `allowed_tools` 是自动批准列表，不能当作工具可见性的完整白名单。
 
@@ -44,11 +44,11 @@
 
 ## 版本陷阱：读旧教程前检查这几项
 
-- **嵌套 subagent：**当前官方默认三层；v2.1.172–216 曾是五层，v2.1.217–218 默认一层，v2.1.219 调整为三层。[官方版本说明](https://code.claude.com/docs/en/sub-agents#let-subagents-spawn-their-own-subagents)
-- **Dynamic workflows：**当前文档提供脚本编排，不能仍把全部调度描述成模型逐轮决定。当前覆盖付费计划、API 和列明的云提供方；Pro 需在 `/config` 开启。检查自己版本和模式。[官方说明](https://code.claude.com/docs/en/workflows)
-- **跨会话通信：**macOS/Linux 从 v2.1.224 起，原生 Windows 从 v2.1.234 起；发送的是文本，接收方权限仍有效。[官方说明](https://code.claude.com/docs/en/cross-session-messaging)
-- **Agent teams：**实验、默认关闭、需要交互会话；有消息能力不自动代表启动了 team。恢复主会话不恢复 in-process teammates。[官方说明](https://code.claude.com/docs/en/agent-teams)
-- **持续等待：**`/loop`、Desktop scheduled tasks、Cloud routines 的机器和会话要求不同；恢复部分调度记录不等于离线期间一直执行。[官方比较](https://code.claude.com/docs/en/scheduled-tasks#compare-scheduling-options)
+- **嵌套 subagent：** 当前官方默认三层；v2.1.172–216 曾是五层，v2.1.217–218 默认一层，v2.1.219 调整为三层。[官方版本说明](https://code.claude.com/docs/en/sub-agents#let-subagents-spawn-their-own-subagents)
+- **Dynamic workflows：** 当前文档提供脚本编排，不能仍把全部调度描述成模型逐轮决定。当前覆盖付费计划、API 和列明的云提供方；Pro 需在 `/config` 开启。检查自己版本和模式。[官方说明](https://code.claude.com/docs/en/workflows)
+- **跨会话通信：** macOS/Linux 从 v2.1.224 起，原生 Windows 从 v2.1.234 起；发送的是文本，接收方权限仍有效。[官方说明](https://code.claude.com/docs/en/cross-session-messaging)
+- **Agent teams：** 实验、默认关闭、需要交互会话；有消息能力不自动代表启动了 team。恢复主会话不恢复 in-process teammates。[官方说明](https://code.claude.com/docs/en/agent-teams)
+- **持续等待：** `/loop`、Desktop scheduled tasks、Cloud routines 的机器和会话要求不同；恢复部分调度记录不等于离线期间一直执行。[官方比较](https://code.claude.com/docs/en/scheduled-tasks#compare-scheduling-options)
 
 ## 公开、可读、开源分别核对
 

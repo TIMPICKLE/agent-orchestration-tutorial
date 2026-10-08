@@ -40,13 +40,13 @@ result = graph.invoke({"issue": "demo-1042", "candidate": "", "passed": False})
 
 ![沿着两个节点，看两个字段怎样更新；初始：candidate=空；passed=False；propose 更新：candidate=候选；verify 更新：passed=比较结果；无条件 END：结束，但未必成功](../assets/diagrams/14-state-updates.svg)
 
-**跟着图走：**
+跟着图走：
 
 1. 先只看 candidate：它由 propose 更新。
 2. 再看 passed：它由 verify 更新，其他字段保留。
 3. 最后看无条件结束边，即使 passed=False 也结束；下一课才加失败路由。
 
-**图的范围：**对应本课玩具代码，不表示真实金额解析测试通过，也不表示框架集成已运行。
+图的范围：对应本课玩具代码，不表示真实金额解析测试通过，也不表示框架集成已运行。
 
 ## 按四块来读
 

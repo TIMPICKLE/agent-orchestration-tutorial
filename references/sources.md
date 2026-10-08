@@ -266,3 +266,11 @@ Squad 的生成协议与后端强制约束应分开解释。数据库竞争控�
 [Claude Code 产品仓库](https://github.com/anthropics/claude-code) 的公开可见性不代表核心运行时以开源许可发布；应分别查看 [产品仓库许可](https://github.com/anthropics/claude-code/blob/main/LICENSE.md) 与 [Python SDK 许可](https://github.com/anthropics/claude-agent-sdk-python/blob/main/LICENSE)。独立分析和教学重建不能作为官方当前实现的直接证据。
 
 完整资源分级与阅读顺序见 [Claude Code 源码与分析阅读指南](claude-code-reading.md)；案例见 [运行循环](../cases/07-claude-code-runtime.md)、[协作与持续运行](../cases/08-claude-code-collaboration.md)、[怎样读源码分析](../cases/09-claude-code-source-reading.md)。
+
+
+<a id="p10"></a>
+### P10 Claude Code 历史源码与版本证据
+
+[历史源码阅读索引](claude-code-historical-reading.md)列出五个候选的固定提交、来源类型与版本局限；其中实际精读的 2.1.88 快照来自 [ChinaSiro/claude-code-sourcemap](https://github.com/ChinaSiro/claude-code-sourcemap/tree/a8a678cb6244e6770e1e421767ff0987a1d95549)。核心阅读入口是 `query.ts`、`toolOrchestration.ts`、`StreamingToolExecutor.ts`、`toolExecution.ts`、`runAgent.ts` 和 `autoCompact.ts`，逐项链接在索引与[案例十](../cases/10-historical-query-loop.md)至[案例十二](../cases/12-historical-subagent-context.md)。
+
+包元数据与提取脚本支持仓库自述，但不等于官方签名认证或开源许可。内容是静态阅读及原创分析，未运行历史产品，也不据旧代码推断当前版本行为。

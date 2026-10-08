@@ -1,0 +1,72 @@
+"""Original diagrams based on a fixed historical source-map snapshot.
+
+Static reading of the unofficial 2.1.88 snapshot at
+ChinaSiro/claude-code-sourcemap, a8a678cb6244e6770e1e421767ff0987a1d95549.
+No third-party source code is reproduced here. See the linked case chapters
+for provenance, immutable source references, and limits of the analysis.
+"""
+from diagram_lib import Figure
+
+
+def build(root):
+    f = Figure('c10-historical-query-loop', 'queryLoop：下一轮来自新状态', '2.1.88 历史快照 · 静态阅读，未运行', 1384)
+    f.node(64, 125, 512, 'State：当前循环状态', 'query委派给queryLoop的while循环', role='program')
+    f.arrow(237, 277, '读取本轮历史与控制状态')
+    f.node(64, 288, 512, '请求前处理上下文', '预算处理、压缩；部分分支有gate', role='program')
+    f.arrow(400, 438, '准备模型输入')
+    f.node(64, 450, 512, 'deps.callModel：模型流', '读取assistant消息与工具请求', role='model')
+    f.path('M320,562 L320,594 L170,594 L170,636')
+    f.path('M320,594 L470,594 L470,636')
+    f.text(114, 626, '有tool_use', 24)
+    f.text(422, 626, '无工具请求', 24)
+    f.node(32, 648, 276, '检查后执行工具', '收集tool results', role='program')
+    f.node(332, 648, 276, '检查后续分支', '恢复 / Stop hooks', role='program')
+    f.path('M170,760 L170,857')
+    f.path('M470,760 L470,815 L170,815', arrow=False)
+    f.text(268, 801, '可继续：重写状态', 24)
+    f.node(32, 870, 576, 'nextState：进入下一轮', '处理后历史 + assistant + 工具结果', role='program')
+    f.path('M32,925 L16,925 L16,181 L56,181')
+    f.path('M608,704 L625,704 L625,1116 L608,1116')
+    f.text(463, 1036, '终止分支', 24)
+    f.node(32, 1060, 576, 'Terminal：返回或报错', '终止运行，不自动等于任务成功', role='program')
+    f.note(1203, ['无工具请求，不一定停止。', '恢复与Hook分支的条件须沿源码核对。'], role='neutral')
+    f.save(root)
+
+    f = Figure('c11-scheduler-barrier', '并发安全批次，中间有独占屏障', '2.1.88 历史快照 · 非流式路径静态阅读', 1166)
+    f.node(32, 124, 576, 'runTools → partitionToolCalls', '按连续调用分组，不是全局DAG规划', role='program')
+    f.arrow(236, 270, 'schema之后按输入分类')
+    f.node(32, 281, 576, 'isConcurrencySafe(input)', '分类异常 → 保守判为不安全', role='program')
+    f.text(32, 445, '时间向下：A、B、C、D、E是调用标识', 24)
+    f.node(32, 476, 276, '安全调用A', '与B并发', role='external', h=106)
+    f.node(332, 476, 276, '安全调用B', '与A并发', role='external', h=106)
+    f.path('M170,582 L170,620 L320,620 L320,650')
+    f.path('M470,582 L470,620 L320,620', arrow=False)
+    f.text(32, 645, '等待本批结束', 24)
+    f.node(150, 664, 340, '不安全调用C', '独占执行，形成屏障', role='program')
+    f.path('M320,776 L320,814 L170,814 L170,847')
+    f.path('M320,814 L470,814 L470,847')
+    f.text(32, 800, '等待C结束', 24)
+    f.node(32, 860, 276, '安全调用D', '与E并发', role='external', h=106)
+    f.node(332, 860, 276, '安全调用E', '与D并发', role='external', h=106)
+    f.note(997, ['安全性取决于输入，不能只看工具名。', '流式执行器是另一实现，勿混用限额。'], role='neutral')
+    f.save(root)
+
+    f = Figure('c12-fork-context', 'runAgent：复用循环，另建上下文', '2.1.88 历史快照 · 静态阅读，非沙箱证明', 1268)
+    f.text(32, 139, '两种初始消息来源', 28, bold=True)
+    f.node(32, 164, 276, '不fork', '只给当前任务提示', role='program')
+    f.node(332, 164, 276, '选择fork', '接收可选父历史', role='program')
+    f.arrow(276, 311, x=470)
+    f.rect(268, 323, 340, 136, '#e8f6f2')
+    f.text(286, 354, 'forkContextMessages', 24)
+    f.text(286, 393, 'filterIncompleteToolCalls', 24, bold=True)
+    f.text(286, 431, '过滤不完整的工具调用对', 24)
+    f.path('M170,276 L170,489 L320,489 L320,513')
+    f.path('M438,459 L438,489 L320,489', arrow=False)
+    f.node(32, 526, 576, 'initialMessages：子代理起点', '过滤后的可选历史 + promptMessages', role='external')
+    f.arrow(638, 678, '建立子代理执行上下文')
+    f.node(32, 690, 576, 'createSubagentContext', '工具、选项与运行状态分别配置', role='program')
+    f.arrow(802, 842, '调用同一核心循环')
+    f.node(32, 854, 576, '复用query，产生消息', 'runAgent向调用者yield messages', role='program')
+    f.note(1000, ['文件读取状态：fork时克隆，否则新建。', '消息起点分开，不代表进程或OS隔离。'], role='neutral')
+    f.text(32, 1152, '不能把早期“仅提示词”的结论套到此版本。', 24)
+    f.save(root)

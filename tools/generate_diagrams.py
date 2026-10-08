@@ -172,4 +172,6 @@ f.note(855,['节点开头可能重跑；副作用仍需去重。','checkpoint不
 
 from diagrams_advanced import build
 build(ROOT)
+from diagrams_historical import build as build_historical
+build_historical(ROOT)
 print(f'Generated {len(list(ROOT.glob("*.svg")))} tutorial figures in {ROOT}')

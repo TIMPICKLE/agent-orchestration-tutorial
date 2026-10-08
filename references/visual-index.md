@@ -57,6 +57,14 @@
 
 先读图下的日期与适用范围。公开 SDK 的实现、厂商文档和独立重建是不同证据，详见[源码阅读案例](../cases/09-claude-code-source-reading.md)。
 
+## Claude Code 历史源码
+
+- [2.1.88 queryLoop 的继续与停止](../cases/10-historical-query-loop.md) · [查看图](../assets/diagrams/c10-historical-query-loop.svg)
+- [并发安全分类与独占屏障](../cases/11-historical-tool-scheduling.md) · [查看图](../assets/diagrams/c11-scheduler-barrier.svg)
+- [子 Agent 的新上下文与可选 fork](../cases/12-historical-subagent-context.md) · [查看图](../assets/diagrams/c12-fork-context.svg)
+
+图中标记的是历史快照的静态阅读，不代表当前版本的所有运行方式。
+
 ## 不需要每一课都加一张图
 
 第 17 课关注增加角色的理由，第 25–29 课关注反例、评估与取舍，第 31–32 课用于自己设计和对照答案。这些课可复用前面的图进行检查，而不重复堆叠流程图。具体可用第 20 课检查协作，第 08、22、23 课设计故障，第 30 课检查证据关联，再回到设计工作表。

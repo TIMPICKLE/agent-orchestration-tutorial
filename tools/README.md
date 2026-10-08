@@ -6,7 +6,7 @@ SVG是本教程原创的确定性矢量图。发布图位于`assets/diagrams/`�
 python tools/generate_diagrams.py
 ```
 
-生成只依赖Python标准库。`diagram_lib.py`提供统一的文字、卡片、箭头和角色图例；`diagrams_advanced.py`绘制协作与案例图。
+生成只依赖Python标准库。`diagram_lib.py`提供统一的文字、卡片、箭头和角色图例；`diagrams_advanced.py`绘制协作与案例图；`diagrams_historical.py`绘制固定历史快照的源码阅读图。
 
 ## 可选：手机尺寸视觉检查
 

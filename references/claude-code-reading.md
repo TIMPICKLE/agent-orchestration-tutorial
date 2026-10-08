@@ -6,6 +6,8 @@
 
 ## 官方 Python SDK：从边界读起
 
+想先读 Claude Code 核心循环的历史实现，走新增的[历史源码路线](claude-code-historical-reading.md)：实际检查 2.1.88 社区 source-map 快照的 queryLoop、工具调度、权限执行点与 runAgent。它与下面的官方 SDK 路线互补；来源、固定提交、版本标签冲突及限制分别列明。
+
 来源：[anthropics/claude-agent-sdk-python](https://github.com/anthropics/claude-agent-sdk-python)。固定提交：`f7b0b62c2a8d110d4da0eec0aa70cf795ec3afc4`（2026-10-07；提交说明将 bundled CLI 更新至 2.1.293）。
 
 推荐顺序：

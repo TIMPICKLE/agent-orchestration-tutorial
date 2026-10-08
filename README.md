@@ -123,6 +123,15 @@
 - [Claude Code 阅读资源与证据分级](references/claude-code-reading.md)
 - [三类任务应该怎样选择架构](design/scenario-decisions.md)
 
+## 旧版本源码精读
+
+这条路线阅读公开历史快照的实际核心代码，以 2.1.88 为主；与前面的当前官方功能说明分开。
+
+- [沿 queryLoop 追踪一轮任务](cases/10-historical-query-loop.md)
+- [工具为什么有时并行有时排队](cases/11-historical-tool-scheduling.md)
+- [子 Agent 怎样继承或隔离上下文](cases/12-historical-subagent-context.md)
+- [历史源码候选与七步阅读路线](references/claude-code-historical-reading.md)
+
 ## 贯穿案例
 
 我们使用一个**虚构的 Azure DevOps 工单 1042**：金额解析函数不能正确处理 `"1,234.50"`。系统需要读懂问题、修改代码、运行测试、准备可供人审阅的交付物，并报告结果。

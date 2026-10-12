@@ -21,7 +21,7 @@
 
 ## 从哪里开始
 
-- **技术分享 / 快速回顾**：下载 [Agent 编排与业务落地实践 HTML](presentations/sonarqube-agent-engineering.html)，在浏览器中离线打开。以 SonarQube 自动修复为案例，包含 10 个工程主题、演示模式与讲解备注。
+- **技术分享 / 快速回顾**：[在线打开 Agent 编排与业务落地实践](https://timpickle.github.io/agent-orchestration-tutorial/)，或下载 [单文件 HTML](presentations/sonarqube-agent-engineering.html) 离线阅读。以 SonarQube 自动修复为案例，包含 10 个工程主题、演示模式与讲解备注。
 - **第一次系统学习**：按 01–32 顺序读。每读完一部，完成一小次练习，不急着安装更多框架。
 - **先通过源码理解设计**：先读 01–04，再读 09–12，然后回到 05 顺读。
 - **主要困惑是 LangGraph**：先读 02、04、06，再读 13–16。没有状态模型，图只会把困惑画出来。

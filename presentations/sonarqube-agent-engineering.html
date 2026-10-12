@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="以 SonarQube 代码异味自动修复为案例，讨论 Agent 编排、任务契约、能力边界与业务落地。TIM 的十个工程主题。">
+<title>Agent 编排与业务落地实践 · TIM</title>
+<!--
+Design adapted from the Agent HTML Report archetype and design tokens.
+https://github.com/QingYunA/agent-html
+Reference commit: 2dad5436b5f908d52c9a84cf7e0e7fdc3276937e
+MIT License — Copyright (c) 2026 QingYunA
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<script>
+try { document.documentElement.dataset.theme = localStorage.getItem('tim-agent-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (_) {}
+</script>
+<style>
+:root {
+  --bg:#fafafa; --card:#ffffff; --card-fg:#09090b; --popover:#ffffff; --popover-fg:#09090b;
+  --primary:#18181b; --primary-fg:#fafafa; --primary-hover:#27272a;
+  --secondary:#f4f4f5; --secondary-fg:#18181b; --secondary-hover:#e4e4e7;
+  --accent:#f4f4f5; --accent-fg:#18181b; --destructive:#dc2626; --destructive-fg:#fafafa;
+  --muted:#f4f4f5; --muted-fg:#71717a; --border:#e4e4e7; --input:#e4e4e7; --ring:#18181b;
+  --radius:8px; --radius-sm:6px; --radius-lg:12px;
+  --shadow-sm:0 1px 2px 0 rgba(0,0,0,.05); --shadow:0 1px 3px 0 rgba(0,0,0,.1);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.1); --shadow-lg:0 10px 15px -3px rgba(0,0,0,.1);
+  --ok:#15803d; --ok-bg:#f0fdf4; --ok-border:#bbf7d0;
+  --warn:#a16207; --warn-bg:#fffbeb; --warn-border:#fde68a;
+  --err:#dc2626; --err-bg:#fef2f2; --err-border:#fecaca;
+  --info:#2563eb; --info-bg:#eff6ff; --info-border:#bfdbfe;
+}
+[data-theme="dark"] {
+  --bg:#09090b; --card:#121215; --card-fg:#fafafa; --popover:#121215; --popover-fg:#fafafa;
+  --primary:#fafafa; --primary-fg:#18181b; --primary-hover:#e4e4e7;
+  --secondary:#27272a; --secondary-fg:#fafafa; --secondary-hover:#3f3f46;
+  --accent:#27272a; --accent-fg:#fafafa; --destructive:#ef4444; --destructive-fg:#fafafa;
+  --muted:#18181b; --muted-fg:#a1a1aa; --border:#27272a; --input:#27272a; --ring:#d4d4d8;
+  --shadow-sm:0 1px 2px 0 rgba(0,0,0,.5); --shadow:0 1px 3px 0 rgba(0,0,0,.5);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.5); --shadow-lg:0 10px 15px -3px rgba(0,0,0,.5);
+  --ok:#4ade80; --ok-bg:#052e1680; --ok-border:#166534;
+  --warn:#fbbf24; --warn-bg:#451a0380; --warn-border:#854d0e;
+  --err:#f87171; --err-bg:#450a0a80; --err-border:#991b1b;
+  --info:#60a5fa; --info-bg:#17255480; --info-border:#1e40af;
+}
+*,*::before,*::after {box-sizing:border-box}
+html {scroll-behavior:smooth;scroll-padding-top:88px}
+body {margin:0;background:var(--bg);color:var(--card-fg);font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea {font:inherit}
+button,a,summary {touch-action:manipulation}
+button {cursor:pointer}
+a {color:inherit;text-underline-offset:4px}
+a:hover {color:var(--info)}
+button:focus-visible,a:focus-visible,summary:focus-visible,select:focus-visible {outline:2px solid var(--ring);outline-offset:4px}
+button:disabled {opacity:.4;cursor:default}
+p,h1,h2,h3,h4 {margin:0}
+button svg,a svg {width:16px;height:16px;flex-shrink:0}
+svg.icon {fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.sr-only {position:absolute;width:1px;height:1px;padding:0;margin:-1px;clip:rect(0,0,0,0);overflow:hidden;white-space:nowrap;border:0}
+.skip-link {position:fixed;left:20px;top:-80px;z-index:100;background:var(--primary);color:var(--primary-fg);padding:10px 18px}
+.skip-link:focus {top:10px}
+.btn {display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);color:var(--card-fg);font-size:13px;font-weight:500;text-decoration:none;transition:background .15s}
+.btn:hover:not(:disabled) {background:var(--secondary)}
+.btn-primary {background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
+.btn-primary:hover:not(:disabled) {background:var(--primary-hover);color:var(--primary-fg)}
+.btn-icon {width:36px;padding:7px}
+.btn-ghost {background:transparent;border-color:transparent}
+.badge {display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border:1px solid var(--border);border-radius:5px;background:var(--secondary);color:var(--secondary-fg);font-size:11px;font-weight:600;line-height:1.5;white-space:nowrap}
+.badge.current {background:var(--ok-bg);border-color:var(--ok-border);color:var(--ok)}
+.badge.future {background:var(--warn-bg);border-color:var(--warn-border);color:var(--warn)}
+.muted {color:var(--muted-fg)}
+.mono,code,pre,kbd {font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace}
+code {font-size:.91em}
+kbd {font-size:11px;border:1px solid var(--border);background:var(--secondary);padding:1px 5px;border-radius:4px}
+.topbar {position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 28px;min-height:65px;border-bottom:1px solid var(--border);background:var(--card)}
+.brand {display:flex;align-items:center;gap:11px;white-space:nowrap;text-decoration:none;font-size:14px;font-weight:650}
+.brand-mark {display:grid;place-items:center;width:31px;height:31px;background:var(--primary);color:var(--primary-fg);border-radius:7px;font-size:12px;letter-spacing:-.06em}
+.brand span:last-child {font-weight:400;color:var(--muted-fg)}
+.toolbar {display:flex;gap:7px;align-items:center}
+#menuToggle {display:none}
+.shell {max-width:1536px;margin:auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding:0 36px}
+.sidebar {border-right:1px solid var(--border);padding-right:24px}
+.sidebar-inner {position:sticky;top:89px;max-height:calc(100dvh - 110px);overflow-y:auto;padding-bottom:20px}
+.nav-heading {font-size:11px;letter-spacing:.12em;color:var(--muted-fg);font-weight:600;margin:8px 0 16px}
+.toc-link {display:flex;gap:10px;text-decoration:none;color:var(--muted-fg);font-size:12px;line-height:1.55;padding:9px 10px;margin:2px 0;border-radius:var(--radius-sm);border-left:2px solid transparent}
+.toc-link .num {font-size:10px;padding-top:2px;min-width:17px}
+.toc-link:hover {background:var(--secondary);color:var(--card-fg)}
+.toc-link.active {background:var(--secondary);border-left-color:var(--primary);color:var(--card-fg);font-weight:600}
+.sidebar-foot {margin:24px 10px 0;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted-fg)}
+.sidebar-foot p+p {margin-top:9px}
+.nav-group {margin:18px 10px 7px;font-size:10px;color:var(--muted-fg);letter-spacing:.08em}
+main {min-width:0;padding:46px 0 100px}
+.hero {padding:10px 0 40px;max-width:960px}
+.eyebrow {display:flex;align-items:center;gap:10px;font-size:11px;font-weight:600;color:var(--muted-fg);letter-spacing:.08em;margin-bottom:19px}
+.eyebrow::before {content:"";width:20px;height:2px;background:var(--card-fg)}
+h1 {font-size:clamp(29px,3.2vw,44px);letter-spacing:-.045em;line-height:1.27;font-weight:720;margin-bottom:18px}
+.hero-lead {max-width:680px;font-size:16px;line-height:1.85;color:var(--muted-fg)}
+.hero-bottom {display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:25px;font-size:12px;color:var(--muted-fg)}
+.scope {display:flex;align-items:flex-start;gap:12px;margin-top:25px;padding:14px 17px;background:var(--secondary);border:1px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--muted-fg)}
+.scope strong {color:var(--card-fg);white-space:nowrap}
+.chapter {scroll-margin-top:90px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:30px 32px;margin:0 0 26px}
+.section-top {display:flex;align-items:center;gap:10px;margin-bottom:13px}
+.chapter-number {color:var(--muted-fg);font:12px/1.4 Consolas,monospace}
+h2 {font-size:clamp(22px,2.1vw,29px);line-height:1.35;letter-spacing:-.035em;font-weight:680}
+.lead {margin-top:10px;color:var(--muted-fg);font-size:14px}
+.visual {margin:28px 0 20px}
+.grid-3 {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.grid-2 {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.panel {border:1px solid var(--border);border-radius:var(--radius);padding:20px;min-width:0;background:var(--card)}
+.panel h3 {font-size:18px;letter-spacing:-.02em;margin:8px 0 15px}
+.panel .label {font-size:11px;color:var(--muted-fg)}
+.panel p {font-size:13px;color:var(--muted-fg);margin-top:6px}
+.panel strong {font-size:14px}
+.panel.focus {background:var(--secondary)}
+.panel.tint {background:var(--ok-bg);border-color:var(--ok-border)}
+.rule {border-top:1px solid var(--border);margin-top:19px;padding-top:13px;font-size:12px;color:var(--muted-fg)}
+.takeaway {display:flex;gap:11px;align-items:flex-start;padding:13px 16px;background:var(--secondary);border-radius:var(--radius-sm);font-size:14px;font-weight:550}
+.takeaway svg {flex-shrink:0;width:17px;height:17px;margin-top:3px;color:var(--muted-fg)}
+.note {font-size:12px;color:var(--muted-fg);margin-top:12px}
+.note strong {color:var(--card-fg);font-weight:550}
+.note.future {color:var(--warn)}
+details {border-top:1px solid var(--border);margin-top:20px}
+summary {list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 0 0;font-size:12px;font-weight:550;color:var(--muted-fg);cursor:pointer}
+summary::-webkit-details-marker {display:none}
+summary::after {content:"＋";font-size:16px}
+details[open] summary::after {content:"−"}
+.speaker-body {padding-top:14px;font-size:13px;color:var(--muted-fg);line-height:1.9}
+.speaker-body p+p {margin-top:10px}
+.source-line {padding-top:12px;font-size:11px}
+.source-line a {margin-right:14px;overflow-wrap:anywhere}
+.contract-layout {display:grid;grid-template-columns:.8fr 1.4fr;gap:22px}
+.request {display:flex;flex-direction:column;justify-content:center;gap:14px;padding:24px;border:1px dashed var(--border);border-radius:var(--radius)}
+.request h3 {font-size:23px;line-height:1.5}
+.request p {font-size:13px;color:var(--muted-fg)}
+.contract-rows {display:grid;gap:0;margin:0;border:1px solid var(--border);border-radius:var(--radius)}
+.contract-row {display:grid;grid-template-columns:64px 1fr;gap:16px;padding:13px 17px;border-bottom:1px solid var(--border);font-size:14px}
+.contract-row:last-child {border:0}
+.contract-row dt {font-weight:650}
+.contract-row dd {margin:0;color:var(--muted-fg)}
+.mini-actions {display:flex;justify-content:flex-end;margin-top:12px}
+.control-shell {border:1px solid var(--border);border-radius:var(--radius);padding:20px;background:var(--secondary)}
+.diagram-label {font-size:12px;color:var(--muted-fg);margin-bottom:20px}
+.control-flow {display:grid;grid-template-columns:.65fr 38px 2fr 38px .65fr;align-items:center;gap:12px}
+.flow-node {text-align:center;padding:15px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);font-size:14px}
+.arrow {height:1px;background:var(--muted-fg);position:relative}
+.arrow::after {content:"";position:absolute;right:-1px;top:-3px;border-top:3.5px solid transparent;border-bottom:3.5px solid transparent;border-left:5px solid var(--muted-fg)}
+.agent-box {padding:22px;border:1px solid var(--ok-border);background:var(--ok-bg);border-radius:var(--radius);text-align:center}
+.agent-box .kicker {color:var(--ok);font-size:12px}
+.agent-box h3 {font-size:19px;margin:12px 0 6px;line-height:1.6}
+.agent-box p {font-size:12px;color:var(--muted-fg)}
+.loop-stage {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;list-style:none;margin:0;padding:0}
+.loop-stage li {position:relative;padding:18px 12px;border:1px solid var(--border);background:var(--secondary);border-radius:var(--radius);transition:background .2s,border-color .2s}
+.loop-stage li.active {border-color:var(--info);background:var(--info-bg)}
+.loop-stage li.done {border-color:var(--ok-border);background:var(--ok-bg)}
+.loop-stage small {font:11px Consolas,monospace;color:var(--muted-fg);display:block;margin-bottom:10px}
+.loop-stage strong {font-size:15px}
+.loop-stage p {font-size:11px;color:var(--muted-fg);margin-top:7px}
+.feedback-rail {border:1px solid var(--border);border-top:0;margin:0 7% 17px;padding:6px 0;border-radius:0 0 8px 8px;text-align:center;font-size:11px;color:var(--muted-fg)}
+.loop-console {padding:17px 19px;border:1px solid var(--border);border-radius:var(--radius);display:flex;gap:16px;align-items:center;justify-content:space-between}
+.loop-console p {font-size:13px;margin-top:5px;color:var(--muted-fg)}
+.loop-console .status-title {font-size:14px;font-weight:600}
+.sim-controls {display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:14px}
+.sim-controls label {font-size:12px;color:var(--muted-fg)}
+select {min-height:34px;max-width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);color:var(--card-fg);padding:5px 28px 5px 10px;font-size:12px}
+.boundary {padding:21px;border:1px solid var(--border);border-radius:var(--radius)}
+.boundary h3 {font-size:17px;margin-bottom:18px}
+.boundary.approved {border-left:3px solid var(--ok)}
+.boundary.external {border:1px dashed var(--warn-border);background:var(--warn-bg)}
+.bullet-list {list-style:none;padding:0;margin:0;display:grid;gap:14px}
+.bullet-list li {font-size:14px;padding-left:14px;position:relative}
+.bullet-list li::before {content:"";position:absolute;left:0;top:.7em;width:4px;height:4px;background:var(--muted-fg);border-radius:1px}
+.bullet-list span {display:block;font-size:12px;color:var(--muted-fg);margin-top:3px}
+.component-grid {display:grid;grid-template-columns:1.7fr 1fr;gap:20px}
+.layer-stack {display:grid;gap:10px}
+.layer {display:flex;justify-content:space-between;align-items:center;gap:20px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:15px 18px;background:var(--secondary)}
+.layer strong {font-size:17px;font-weight:600}
+.layer span {font-size:13px;color:var(--muted-fg)}
+.layer.agent {background:var(--ok-bg);border-color:var(--ok-border)}
+.supports {border-left:1px solid var(--border);padding-left:24px;display:grid;align-content:center;gap:24px}
+.supports h3 {font-size:17px}
+.supports p {font-size:12px;color:var(--muted-fg);margin-top:3px}
+.harness {margin-top:14px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 18px;display:flex;justify-content:space-between;gap:10px;background:var(--secondary);font-size:13px}
+.harness span {color:var(--muted-fg)}
+.state-example {margin-top:18px;border:1px solid var(--border);border-radius:var(--radius);padding:15px 18px;font-size:12px;display:flex;align-items:flex-start;gap:15px}
+.state-example p {color:var(--muted-fg);margin-top:4px}
+.table-wrap {overflow-x:auto;width:100%;border:1px solid var(--border);border-radius:var(--radius)}
+table {width:100%;border-collapse:collapse;font-size:13px;text-align:left;min-width:580px}
+th,td {padding:14px 17px;border-bottom:1px solid var(--border);vertical-align:top}
+th {font-size:12px;color:var(--muted-fg);background:var(--secondary);font-weight:550}
+tr:last-child td {border-bottom:0}
+td:first-child {font-weight:650;white-space:nowrap}
+td span {display:block;color:var(--muted-fg);font-size:11px;margin-top:5px}
+.integration-flow {display:grid;grid-template-columns:1fr 30px 1.2fr 30px 1fr;align-items:center;gap:12px}
+.integration-flow .flow-node {padding:22px 14px}
+.flow-node strong {display:block;font-size:17px;margin-bottom:7px}
+.flow-node span {color:var(--muted-fg);font-size:12px}
+.handoff-row {margin-top:19px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;font-size:12px;color:var(--muted-fg)}
+.handoff-row strong {color:var(--card-fg);display:block;margin-bottom:5px;font-size:13px}
+.colophon {border-top:1px solid var(--border);padding-top:22px;margin-top:34px;font-size:11px;color:var(--muted-fg);line-height:1.9}
+.colophon .footer-links {display:flex;flex-wrap:wrap;gap:18px;margin-bottom:12px}
+.colophon p+p {margin-top:8px}
+.present-bar {display:none}
+body.presenting .sidebar,body.presenting .hero,body.presenting .colophon,body.presenting #menuToggle {display:none}
+body.presenting .shell {display:block;max-width:1300px;padding:0 42px}
+body.presenting main {padding:26px 0 90px}
+body.presenting .chapter {display:none;min-height:calc(100dvh - 187px);padding:30px 38px;margin:0}
+body.presenting .chapter.active {display:block}
+body.presenting h2 {font-size:clamp(28px,3.1vw,42px)}
+body.presenting .lead {font-size:17px}
+body.presenting .visual {margin:30px 0 26px}
+body.presenting .panel h3,body.presenting .agent-box h3 {font-size:23px}
+body.presenting .panel p,body.presenting .bullet-list li,body.presenting .contract-row {font-size:17px}
+body.presenting .takeaway {font-size:18px}
+body.presenting .panel strong,body.presenting .loop-stage strong {font-size:19px}
+body.presenting .layer strong {font-size:21px}
+body.presenting .layer span {font-size:16px}
+body.presenting .present-bar {position:fixed;display:flex;align-items:center;justify-content:space-between;gap:16px;bottom:0;left:0;right:0;z-index:25;background:var(--card);border-top:1px solid var(--border);padding:11px 32px}
+.present-progress {display:flex;align-items:center;gap:14px;font-size:12px;color:var(--muted-fg)}
+.progress-track {width:140px;height:3px;background:var(--border);border-radius:2px}
+#progressFill {width:10%;height:100%;background:var(--primary)}
+.key-hints {font-size:11px;color:var(--muted-fg)}
+.present-actions {display:flex;align-items:center;gap:8px}
+.toast {position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:60;background:var(--primary);color:var(--primary-fg);padding:10px 18px;border-radius:var(--radius);font-size:13px;box-shadow:var(--shadow-lg);max-width:calc(100% - 32px)}
+.toast:empty {display:none}
+dialog {background:var(--popover);color:var(--popover-fg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:min(640px,calc(100% - 32px));box-shadow:var(--shadow-lg)}
+dialog::backdrop {background:rgba(0,0,0,.4)}
+dialog h3 {font-size:19px;margin-bottom:8px}
+dialog p {font-size:13px;color:var(--muted-fg);margin-bottom:16px}
+dialog textarea {width:100%;min-height:240px;resize:vertical;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--secondary);color:var(--card-fg);font:12px/1.6 Consolas,monospace}
+.dialog-actions {display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+@media (min-width:1700px) {.shell {max-width:1650px;gap:64px}body {font-size:16px}}
+@media (max-width:1100px) {.shell {grid-template-columns:220px minmax(0,1fr);gap:25px;padding:0 22px}.sidebar {padding-right:15px}.chapter {padding:26px 24px}.toolbar .optional {display:none}.control-flow {grid-template-columns:.55fr 20px 1.6fr 20px .55fr;gap:7px}}
+@media (max-width:860px) {
+  .topbar {padding:11px 16px;gap:8px}.brand .brand-context {display:none}#menuToggle {display:inline-flex}
+  .shell {display:block;padding:0 20px}.sidebar {display:none;position:fixed;top:65px;bottom:0;left:0;width:280px;z-index:29;background:var(--card);padding:17px;border-right:1px solid var(--border);box-shadow:var(--shadow-md)}
+  body.menu-open:not(.presenting) .sidebar {display:block}.sidebar-inner {position:static;max-height:100%;overflow:auto}main {padding-top:30px}.hero {padding-top:0}h1 {font-size:35px}
+  .chapter {padding:25px 23px}.key-hints {display:none}body.presenting .shell {padding:0 20px}body.presenting .chapter {padding:24px}body.presenting main {padding-top:18px}
+}
+@media (max-width:600px) {
+  .toolbar {gap:4px}.toolbar .btn {padding:7px 9px}.toolbar .action-label {display:none}.brand {font-size:12px;gap:7px}.brand-mark {width:27px;height:27px}.topbar {padding:10px 12px}
+  .shell {padding:0 14px}main {padding-top:24px}.hero {padding-bottom:28px}h1 {font-size:30px}.hero-lead {font-size:14px}.scope {display:block}.scope strong {display:block;margin-bottom:5px}
+  .chapter {padding:22px 18px}.grid-3,.grid-2,.contract-layout {grid-template-columns:1fr}.panel {padding:17px}.panel h3 {margin-bottom:9px}.visual {margin-top:22px}.request {padding:18px}.request h3 {font-size:21px}
+  .control-flow,.integration-flow {display:flex;flex-direction:column}.control-flow>*:not(.arrow),.integration-flow>*:not(.arrow) {width:100%}.arrow {width:1px;height:18px}.arrow::after {right:-3px;top:auto;bottom:-1px;border-top:5px solid var(--muted-fg);border-bottom:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent}
+  .loop-stage {grid-template-columns:repeat(2,minmax(0,1fr))}.loop-console {align-items:flex-start;flex-direction:column}.loop-stage li {padding:15px 12px}.sim-controls {gap:8px}.component-grid {grid-template-columns:1fr}.supports {border-left:0;border-top:1px solid var(--border);padding:17px 0 0;grid-template-columns:1fr 1fr}.harness {display:block}.harness span {display:block;margin-top:4px}
+  .state-example {display:block}.state-example>.badge {margin-bottom:8px}.handoff-row {grid-template-columns:1fr;gap:12px}.takeaway {font-size:13px}.present-progress {gap:8px}.progress-track {width:50px}body.presenting .present-bar {padding:10px 13px;gap:8px}body.presenting .shell {padding:0 12px}body.presenting .chapter {padding:22px 18px}body.presenting h2 {font-size:27px}body.presenting .lead {font-size:14px}body.presenting .takeaway {font-size:15px}body.presenting .panel p,body.presenting .contract-row,body.presenting .bullet-list li {font-size:15px}
+}
+@media (prefers-reduced-motion:reduce) {html {scroll-behavior:auto}*,*::before,*::after {transition:none!important;animation:none!important}}
+@media print {
+  :root,[data-theme="dark"] {--bg:#fff;--card:#fff;--card-fg:#111;--primary:#111;--primary-fg:#fff;--secondary:#f4f4f5;--secondary-fg:#111;--muted:#f4f4f5;--muted-fg:#555;--border:#ccc;--ok:#166534;--ok-bg:#f0fdf4;--ok-border:#bbf7d0;--warn:#854d0e;--warn-bg:#fffbeb;--warn-border:#fde68a;--info:#1d4ed8;--info-bg:#eff6ff;--info-border:#bfdbfe}
+  @page {size:A4;margin:14mm}body {font-size:11pt;background:#fff}.topbar,.sidebar,.toolbar,.present-bar,.btn,.sim-controls,.mini-actions,.toast,dialog,.hero-bottom,.skip-link {display:none!important}
+  .shell,body.presenting .shell {display:block;padding:0;max-width:none}main,body.presenting main {padding:0}.hero,body.presenting .hero {display:block;padding-bottom:24px}.hero h1 {font-size:28pt}.colophon,body.presenting .colophon {display:block}
+  .chapter,body.presenting .chapter {display:block!important;min-height:0;margin:0 0 18px;padding:20px;box-shadow:none;break-inside:avoid}.chapter h2,body.presenting h2 {font-size:19pt}.chapter .lead {font-size:11pt}.visual,body.presenting .visual {margin:20px 0}.speaker-notes {display:none}.grid-3 {grid-template-columns:repeat(3,1fr)}.grid-2 {grid-template-columns:repeat(2,1fr)}.table-wrap {overflow:visible}table {min-width:0;font-size:9pt}.panel p,body.presenting .panel p {font-size:10pt}.takeaway,body.presenting .takeaway {font-size:11pt}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar">
+  <div class="toolbar">
+    <button class="btn btn-icon btn-ghost" id="menuToggle" aria-label="打开章节目录" aria-controls="sidebar" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="brand" href="#overview"><span class="brand-mark">T.</span><strong>工程实践分享</strong><span class="brand-context">/ Agent 编排</span></a>
+  </div>
+  <div class="toolbar">
+    <button class="btn optional" id="exportMd" title="下载包含讲解备注的 Markdown 提纲"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg><span>导出提纲</span></button>
+    <button class="btn optional" id="printBtn" title="打印或保存为 PDF"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H3v-8h18v8h-3M6 14h12v7H6z"/></svg><span>打印</span></button>
+    <button class="btn btn-primary" id="presentToggle" aria-pressed="false" title="切换阅读 / 演示模式（P）"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v12H3zM12 16v5m-4 0 4-3 4 3"/></svg><span id="presentLabel">演示模式</span></button>
+    <button class="btn btn-icon" id="themeToggle" aria-label="切换深浅主题" title="切换深浅主题"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/></svg></button>
+  </div>
+</header>
+<div class="shell">
+<aside class="sidebar" id="sidebar" aria-label="章节目录">
+ <div class="sidebar-inner">
+  <p class="nav-heading">分享目录 <span class="mono">/ 10</span></p>
+  <nav id="tocNav">
+   <p class="nav-group">任务与控制</p>
+   <a class="toc-link active" href="#topic-01"><span class="num mono">01</span><span>工作流的切分依据</span></a>
+   <a class="toc-link" href="#topic-02"><span class="num mono">02</span><span>任务契约的设计</span></a>
+   <a class="toc-link" href="#topic-03"><span class="num mono">03</span><span>外层编排与 Agent 的控制分工</span></a>
+   <a class="toc-link" href="#topic-04"><span class="num mono">04</span><span>有退出条件的工具循环</span></a>
+   <p class="nav-group">边界与运行</p>
+   <a class="toc-link" href="#topic-05"><span class="num mono">05</span><span>Agent 的能力边界与权限控制</span></a>
+   <a class="toc-link" href="#topic-06"><span class="num mono">06</span><span>Agent 系统的组件分工</span></a>
+   <a class="toc-link" href="#topic-07"><span class="num mono">07</span><span>上下文、任务状态与运行日志</span></a>
+   <p class="nav-group">协作与落地</p>
+   <a class="toc-link" href="#topic-08"><span class="num mono">08</span><span>多 Agent 的拆分依据与协作成本</span></a>
+   <a class="toc-link" href="#topic-09"><span class="num mono">09</span><span>Agent 编排方案与框架选型</span></a>
+   <a class="toc-link" href="#topic-10"><span class="num mono">10</span><span>Agent 与团队工作流的集成</span></a>
+  </nav>
+  <div class="sidebar-foot"><p>SonarQube 代码异味自动修复系统</p><p><span class="badge current">现有实现</span> <span class="badge future">设计 / 拓展</span></p><p>演示时 <kbd>←</kbd> <kbd>→</kbd> 切换章节<br><kbd>N</kbd> 讲解备注　<kbd>Esc</kbd> 返回阅读</p></div>
+ </div>
+</aside>
+<main id="main">
+ <div class="hero" id="overview">
+  <div class="eyebrow">AI 先锋作品汇报 · TIM / 2026.10</div>
+  <h1>Agent 编排<br>与业务落地实践</h1>
+  <p class="hero-lead">以 SonarQube 代码异味自动修复系统为案例，沿着一项修复任务，展开控制分工、能力边界与交付责任。</p>
+  <div class="hero-bottom"><button class="btn btn-primary" id="startPresentation">开始分享 <span aria-hidden="true">↗</span></button><span>10 个技术主题</span><span>面向工程师</span><span>讲解备注按需展开</span></div>
+  <div class="scope"><strong>内容边界</strong><span>当前实现、教学模型与设计建议分别标注。子图、并行处理、人工中断与恢复属于拓展方向。</span></div>
+ </div>
+
+ <section class="chapter active" id="topic-01" aria-labelledby="title-01">
+  <div class="section-top"><span class="chapter-number">01 / 10</span><span class="badge">设计方法</span></div>
+  <h2 id="title-01">工作流的切分依据</h2>
+  <p class="lead">从一条异味出发：查询、定位、修复和验收，各需要什么决策？</p>
+  <div class="visual grid-3 export-content">
+   <div class="panel"><span class="label mono">确定性步骤</span><h3>规则明确</h3><strong>查询、Git、PR</strong><p>交给确定性程序</p><div class="rule">输入相同，处理规则应可预期。</div></div>
+   <div class="panel tint"><span class="label mono">探索性步骤</span><h3>路径未知</h3><strong>定位、修复</strong><p>交给 Agent 探索</p><div class="rule">读取上下文，根据反馈调整行动。</div></div>
+   <div class="panel"><span class="label mono">责任性判断</span><h3>责任判断</h3><strong>验收、授权</strong><p>明确规则与责任人</p><div class="rule">自动化检查与责任归属同时定义。</div></div>
+  </div>
+  <p class="takeaway">每个节点都有明确的输入、产出和退出条件。</p>
+  <details class="speaker-notes"><summary>讲解备注 <span>从业务动作，展开到职责划分</span></summary><div class="speaker-body">
+   <p>把业务流程转成 Agent 工作流时，先判断每个环节需要什么性质的决策。查询参数明确、创建 PR 的接口确定，就可以用程序表达。定位问题和选择修复方案依赖代码上下文，适合保留探索空间。</p>
+   <p>涉及验收、授权和合并时，检查可以自动执行，责任人仍需要明确。角色名称本身不足以形成工作流，还要约定节点之间交换什么，以及什么时候结束。</p>
+   <p>这里是一种设计方法，不表示当前系统每个工具已经按此严格隔离。现场可以选一项日常任务，让听众逐步判断各个环节属于哪一类。</p>
+   <p class="source-line">资料：<a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/02-control.md" target="_blank" rel="noopener">谁决定下一步</a><a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/05-python-workflow.md" target="_blank" rel="noopener">固定 Python 流程</a></p>
+  </div></details>
+ </section>
+
+ <section class="chapter" id="topic-02" aria-labelledby="title-02">
+  <div class="section-top"><span class="chapter-number">02 / 10</span><span class="badge future">设计示例</span></div>
+  <h2 id="title-02">任务契约的设计</h2>
+  <p class="lead">“修复这条异味”还需要哪些约定？</p>
+  <div class="visual contract-layout export-content">
+   <div class="request"><span class="badge">任务请求</span><h3>修复这条异味</h3><p>把目标补充成可执行、可验收的任务。</p></div>
+   <dl class="contract-rows"><div class="contract-row"><dt>输入</dt><dd>异味 Key、仓库、代码基线</dd></div><div class="contract-row"><dt>交付</dt><dd>补丁、PR 与修改说明</dd></div><div class="contract-row"><dt>证据</dt><dd>检查与测试记录，绑定代码版本</dd></div><div class="contract-row"><dt>停止</dt><dd>越权、环境阻塞、预算耗尽</dd></div></dl>
+  </div>
+  <p class="takeaway">任务契约明确 Agent 的目标与交付责任。</p>
+  <div class="mini-actions"><button class="btn" id="copyContract">复制任务契约模板</button></div>
+  <details class="speaker-notes"><summary>讲解备注 <span>把“完成”变成可检查的约定</span></summary><div class="speaker-body">
+   <p>输入里的代码基线明确任务从哪个版本开始。交付物告诉下游接收什么。验收证据则说明这份交付经过了哪些检查，以及检查对应哪个代码版本。</p>
+   <p>如果 Agent 发现需要改动另一个未授权仓库才能继续，它应报告阻塞，说明缺少什么、已经完成什么、由谁接手。阻塞也是可以约定的任务结果，不能一律折算为成功。</p>
+   <p>本页是设计示例，不宣称当前项目已经完整实现这些字段。复制的模板包含待填写项，需要按真实任务补充。</p>
+   <p class="source-line">资料：<a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/01-task-and-done.md" target="_blank" rel="noopener">任务与完成标准</a><a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/11-done-criteria.md" target="_blank" rel="noopener">完成判断与证据</a></p>
+  </div></details>
+ </section>
+
+ <section class="chapter" id="topic-03" aria-labelledby="title-03">
+  <div class="section-top"><span class="chapter-number">03 / 10</span><span class="badge current">现有职责结构</span></div>
+  <h2 id="title-03">外层编排与 Agent 的控制分工</h2>
+  <p class="lead">程序决定业务阶段，Agent 探索阶段内的执行路径。</p>
+  <div class="visual control-shell export-content">
+   <p class="diagram-label">外层程序 / 阶段衔接与结果交接</p>
+   <div class="control-flow"><div class="flow-node">准备工作区</div><div class="arrow" aria-hidden="true"></div><div class="agent-box"><span class="kicker">内层 Agent / 阶段内探索</span><h3>读代码　选工具　改代码</h3><p>依据工具反馈选择下一步</p></div><div class="arrow" aria-hidden="true"></div><div class="flow-node">交付与记录</div></div>
+  </div>
+  <p class="takeaway">职责分开之后，还需在执行端落实权限边界。</p>
+  <p class="note"><strong>当前实现：</strong>MAF 版的外层仍由 Python 顺序编排。工具内部的提交、推送等副作用需要单独检查。</p>
+  <details class="speaker-notes"><summary>讲解备注 <span>沿着真实调用链追踪控制权</span></summary><div class="speaker-body">
+   <p>外层程序负责准备、调用修复、接收结果和后续交付。内层根据问题读取代码，选择工具，修改后再根据工具反馈决定下一步。外层不需要提前列出每一次文件读取。</p>
+   <p>这张图表达职责分工，不能用它代替权限审查。一个名为“修复”的工具，内部也可能包含提交和推送。应追问：谁选择了这个工具，它会产生哪些副作用，哪些条件由程序检查？</p>
+   <p>现有顺序编排与内层工具循环已经可以合作。复杂路由、持久恢复属于需要另行设计的能力。</p>
+   <p class="source-line">资料：<a href="https://github.com/TIMPICKLE/SonarqubeAutoFlow_MAF" target="_blank" rel="noopener">SonarqubeAutoFlow_MAF 公开源码</a></p>
+  </div></details>
+ </section>
+
+ <section class="chapter" id="topic-04" aria-labelledby="title-04">
+  <div class="section-top"><span class="chapter-number">04 / 10</span><span class="badge future">教学模型</span></div>
+  <h2 id="title-04">有退出条件的工具循环</h2>
+  <p class="lead">一次修改之后，新的观察决定继续、交付还是停止。</p>
+  <div class="visual export-content">
+   <ol class="loop-stage" id="loopStages"><li class="active"><small>01 / READ</small><strong>读取上下文</strong><p>问题、代码与既有状态</p></li><li><small>02 / ACT</small><strong>选择并执行工具</strong><p>在允许范围内行动</p></li><li><small>03 / OBSERVE</small><strong>观察结果</strong><p>产物、错误与验证记录</p></li><li><small>04 / DECIDE</small><strong>调整与退出判断</strong><p>验收、阻塞、权限、预算</p></li></ol>
+   <div class="feedback-rail">未满足验收且仍可执行时，将反馈带入下一轮</div>
+   <div class="loop-console" aria-live="polite"><div><span class="status-title" id="loopTitle">读取：定位异味涉及的代码</span><p id="loopDetail">教学演示，不调用模型，不修改仓库。</p></div><span class="badge" id="loopBadge">第 1 / 4 步</span></div>
+  </div>
+  <div class="sim-controls"><label for="loopScenario">示例结果</label><select id="loopScenario"><option value="pass">相关验证通过</option><option value="retry">断言失败，继续修复</option><option value="budget">预算耗尽，报告阻塞</option></select><button class="btn btn-primary" id="loopNext">下一步</button><button class="btn" id="loopReset">重置</button></div>
+  <p class="takeaway" style="margin-top:18px">停止条件属于循环设计的一部分。</p>
+  <details class="speaker-notes"><summary>讲解备注 <span>通过三个结果，解释反馈与退出</span></summary><div class="speaker-body">
+   <p>当修改后的测试断言失败，原样重复同一个动作通常不会增加信息，需要根据反馈调整候选方案。若验证通过，就继续检查是否满足任务约定。若预算耗尽，即使仍有想法，也应停止并留下可接手的结果。</p>
+   <p>此演示固定展示三种路径，用来解释机制。它不是当前生产任务的运行记录，也不是完整的执行协议。真实系统需要在合适的执行点检查权限和预算，尤其是在产生副作用之前。</p>
+   <p>工具结果应尽量包含可识别的状态、产物引用和错误类型。一次“测试通过”也只覆盖那次测试的范围。</p>
+   <p class="source-line">资料：<a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/06-agent-loop.md" target="_blank" rel="noopener">反馈循环</a><a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/08-retry.md" target="_blank" rel="noopener">失败与重试</a></p>
+  </div></details>
+ </section>
+
+ <section class="chapter" id="topic-05" aria-labelledby="title-05">
+  <div class="section-top"><span class="chapter-number">05 / 10</span><span class="badge future">设计建议</span></div>
+  <h2 id="title-05">Agent 的能力边界与权限控制</h2>
+  <p class="lead">把“可以自主修复”，细化成允许的动作、范围与预算。</p>
+  <div class="visual grid-2 export-content">
+   <div class="boundary approved"><h3>任务内部</h3><ul class="bullet-list"><li>指定仓库读、改、测<span>工作区范围与可修改文件</span></li><li>工具名单与参数范围<span>执行前检查实际动作</span></li><li>时间、轮数与成本预算<span>达到上限后停止并报告</span></li></ul></div>
+   <div class="boundary external"><h3>外部动作</h3><ul class="bullet-list"><li>推送、合并、发布<span>分别定义授权条件</span></li><li>受控执行器操作<span>落实凭据范围、参数检查和执行策略</span></li><li>超出授权时转交<span>说明阻塞原因与所需决定</span></li></ul></div>
+  </div>
+  <p class="takeaway">提示词表达意图，工具端落实限制。</p>
+  <details class="speaker-notes"><summary>讲解备注 <span>检查真正产生副作用的位置</span></summary><div class="speaker-body">
+   <p>明确授权的动作可以自动完成，不要求每一步都现场点击确认。重点是授权范围能够表达，执行端能够检查，越界之后有清楚的停止和升级方式。</p>
+   <p>Skills 和提示词适合提供规范与工作方法，但它们不会自动限制凭据或文件系统权限。真正产生副作用的是工具及运行环境，因此工作区隔离、工具参数检查和预算也要在这一层落实。</p>
+   <p>本页属于设计建议。项目中的真实限制需要结合 CLI 参数、工具实现和部署环境逐项核实。</p>
+   <p class="source-line">资料：<a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/07-bounded-autonomy.md" target="_blank" rel="noopener">给自主性画出边界</a><a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/27-boundaries.md" target="_blank" rel="noopener">成本、权限与上下文</a></p>
+  </div></details>
+ </section>
+
+ <section class="chapter" id="topic-06" aria-labelledby="title-06">
+  <div class="section-top"><span class="chapter-number">06 / 10</span><span class="badge">概念分工</span></div>
+  <h2 id="title-06">Agent 系统的组件分工</h2>
+  <p class="lead">用各自承担的职责理解术语，再决定是否需要这个组件。</p>
+  <div class="visual export-content">
+   <div class="component-grid"><div class="layer-stack"><div class="layer"><strong>Workflow</strong><span>业务阶段与任务状态</span></div><div class="layer agent"><strong>Agent</strong><span>阶段内的下一步行动</span></div><div class="layer"><strong>Tool</strong><span>具体的外部操作</span></div></div><div class="supports"><div><h3>Skills</h3><p>规范、经验与可复用方法</p></div><div><h3>MCP</h3><p>连接外部工具与系统的协议</p></div></div></div>
+   <div class="harness"><strong>Harness / 运行支撑</strong><span>为 Agent 执行提供环境与运行机制</span></div>
+  </div>
+  <p class="takeaway">组件的分工，需要能对应到真实调用关系。</p>
+  <p class="note">概念示意，不表示本项目已经部署图中全部组件。</p>
+  <details class="speaker-notes"><summary>讲解备注 <span>从组件名称，回到实际责任</span></summary><div class="speaker-body">
+   <p>Workflow 管理业务阶段，Agent 在给定任务内选择行动，Tool 执行具体操作。Skills 提供指导，MCP 提供系统连接协议，Harness 概括执行所需的运行支撑。它们不一定对应独立服务，也不要求全部采用。</p>
+   <p>连接出的工具仍需自己的权限策略。把约束写进 Skills，也不等于工具端已经强制执行。评审时可以追问：规范如何进入上下文，工具结果如何回到循环，业务状态由谁保存？</p>
+   <p>本页按教程与项目语境给出工作性定义，用来帮助分工，不主张这些术语在所有框架中都有完全相同的边界。</p>
+   <p class="source-line">资料：<a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/03-model-tool-agent.md" target="_blank" rel="noopener">模型、工具、Agent 与编排</a><a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/09-repository-map.md" target="_blank" rel="noopener">底盘与单会话执行</a></p>
+  </div></details>
+ </section>
+
+ <section class="chapter" id="topic-07" aria-labelledby="title-07">
+  <div class="section-top"><span class="chapter-number">07 / 10</span><span class="badge">现状与拓展</span></div>
+  <h2 id="title-07">上下文、任务状态与运行日志</h2>
+  <p class="lead">任务执行到一半，进程退出了，系统凭什么决定从哪里继续？</p>
+  <div class="visual grid-3 export-content">
+   <div class="panel"><span class="label">支持当前推理</span><h3>上下文</h3><strong>当前问题与代码</strong><p>模型这一轮需要知道什么</p><div class="rule">例如：异味描述、相关代码片段。</div></div>
+   <div class="panel focus"><span class="label">决定下一步</span><h3>任务状态</h3><strong>阶段、产物、阻塞</strong><p>系统接下来允许做什么</p><div class="rule">例如：候选版本、PR 引用、等待原因。</div></div>
+   <div class="panel"><span class="label">支持事后追溯</span><h3>运行日志</h3><strong>发生过什么</strong><p>如何排查一次运行</p><div class="rule">例如：工具调用、错误与处理记录。</div></div>
+  </div>
+  <p class="takeaway">上下文服务推理，状态驱动流程，日志支持追溯。</p>
+  <div class="state-example"><span class="badge current">现有实现</span><div><strong>WorkflowState + JSON 处理记录</strong><p>传递运行信息、保留处理结果。</p></div></div>
+  <p class="note future"><strong>拓展方向：</strong>跨进程恢复、人工中断与恢复，还需要持久状态、幂等约定和恢复协议。</p>
+  <details class="speaker-notes"><summary>讲解备注 <span>保存了记录，不等于已经可靠恢复</span></summary><div class="speaker-body">
+   <p>上下文服务推理，任务状态服务流程，日志服务追溯。三者会引用相同的信息，但承担的责任不同。恢复过程需要清楚知道哪些状态已持久化，以及哪些远端动作可能已经发生。</p>
+   <p>如果创建 PR 的响应丢失，应先查询远端，而不是立即重复创建。稳定的任务标识、产物版本、阶段提交点与幂等约定，才能为恢复提供可靠依据。</p>
+   <p>当前项目有 WorkflowState 和 JSON 记录，但不能据此声称已经具备可靠的跨进程恢复。人工中断与恢复属于后续设计方向。</p>
+   <p class="source-line">资料：<a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/04-state.md" target="_blank" rel="noopener">任务状态</a><a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/16-persistence.md" target="_blank" rel="noopener">暂停、保存与恢复</a></p>
+  </div></details>
+ </section>
+
+ <section class="chapter" id="topic-08" aria-labelledby="title-08">
+  <div class="section-top"><span class="chapter-number">08 / 10</span><span class="badge future">设计取舍</span></div>
+  <h2 id="title-08">多 Agent 的拆分依据与协作成本</h2>
+  <p class="lead">准备增加一个 Reviewer 前，先明确它能带来什么可验证的收益。</p>
+  <div class="visual grid-2 export-content">
+   <div class="panel"><span class="label">拆分的理由</span><h3>责任可以独立</h3><ul class="bullet-list"><li>子任务可独立验证<span>产物和验收能够单独定义</span></li><li>上下文或权限需要隔离<span>避免无关信息与过大的权限范围</span></li><li>工作可以真正并行<span>依赖关系允许独立推进</span></li></ul></div>
+   <div class="panel focus"><span class="label">增加的成本</span><h3>协作需要协议</h3><ul class="bullet-list"><li>交接信息<span>背景、产物与证据如何传递</span></li><li>协调冲突<span>共享工作区与冲突由谁处理</span></li><li>调用与等待<span>模型成本、延迟和失败链路</span></li></ul></div>
+  </div>
+  <p class="takeaway">加一个 Reviewer 后，漏检是否真的减少？</p>
+  <p class="note future">子图与多 Agent 并行属于设计 / 拓展方向，不作为当前项目功能。</p>
+  <details class="speaker-notes"><summary>讲解备注 <span>新增角色，需要用固定样本验证</span></summary><div class="speaker-body">
+   <p>如果两个角色依赖完全相同的信息，只能串行等待，而且没有独立验收，拆分收益就需要认真验证。增加一个名字，并不会自动产生独立判断。</p>
+   <p>Reviewer 可以拥有不同的审查任务、上下文和证据要求。是否有效，应通过固定样本比较漏检、误报、人工审查负担和运行成本。仅仅换一段提示词，无法证明质量提升。</p>
+   <p>先把单个任务的输入、输出和验收写清楚，才能判断是否值得拆出新角色。并行执行还要考虑工作区冲突和汇总规则。</p>
+   <p class="source-line">资料：<a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/17-why-multi-agent.md" target="_blank" rel="noopener">增加一个 Agent 要解决什么</a><a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/20-parallel.md" target="_blank" rel="noopener">并行与可靠汇总</a></p>
+  </div></details>
+ </section>
+
+ <section class="chapter" id="topic-09" aria-labelledby="title-09">
+  <div class="section-top"><span class="chapter-number">09 / 10</span><span class="badge">选型对比</span></div>
+  <h2 id="title-09">Agent 编排方案与框架选型</h2>
+  <p class="lead">先指出当前重复劳动或控制需求，再选择承担它的基础设施。</p>
+  <div class="visual table-wrap export-content"><table><caption class="sr-only">Python、MAF 和 LangGraph 在本分享中的能力侧重点</caption><thead><tr><th scope="col">方案</th><th scope="col">适合承担的工作</th><th scope="col">仍需业务自己定义</th></tr></thead><tbody><tr><td>Python</td><td>固定步骤<span>直接表达业务顺序</span></td><td>失败分支、状态保存与交付约定</td></tr><tr><td>MAF</td><td>Agent 工具循环<span>减少循环与调用样板</span></td><td>任务契约、权限边界与完成判据</td></tr><tr><td>LangGraph</td><td>显式状态与条件路由<span>组织分支、等待和恢复</span></td><td>状态语义、外部动作幂等与恢复协议</td></tr></tbody></table></div>
+  <p class="takeaway">不同层的能力可以组合，选型由当前缺口决定。</p>
+  <p class="note"><span class="badge current">当前项目</span> MAF 版的外层仍由 Python 顺序编排。</p>
+  <details class="speaker-notes"><summary>讲解备注 <span>比较能力侧重点，避免把框架当成答案</span></summary><div class="speaker-body">
+   <p>这张表列出与当前问题相关的能力侧重点，不是完整的产品能力清单，也不表示三种方案互斥。固定流程、Agent 循环和图路由可以服务于不同层。</p>
+   <p>使用 MAF 不自动意味着已经实现图工作流。使用支持 checkpoint 的框架，也仍需自己定义状态内容、幂等操作和恢复后的责任判断。</p>
+   <p>选型时先描述缺口：是工具循环难维护，还是条件分支越来越多，或是必须长时间等待并恢复？再检查框架是否确实降低对应的实现和维护成本。</p>
+   <p class="source-line">资料：<a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/28-frameworks.md" target="_blank" rel="noopener">按问题选择框架</a><a href="https://github.com/TIMPICKLE/SonarqubeAutoFlow_MAF" target="_blank" rel="noopener">项目 MAF 版本</a></p>
+  </div></details>
+ </section>
+
+ <section class="chapter" id="topic-10" aria-labelledby="title-10">
+  <div class="section-top"><span class="chapter-number">10 / 10</span><span class="badge current">现有链路</span><span class="badge future">交付建议</span></div>
+  <h2 id="title-10">Agent 与团队工作流的集成</h2>
+  <p class="lead">自动执行的结果，需要进入团队能够接手的协作入口。</p>
+  <div class="visual export-content">
+   <div class="integration-flow"><div class="flow-node"><strong>SonarQube</strong><span>已有任务入口</span></div><div class="arrow" aria-hidden="true"></div><div class="flow-node" style="background:var(--ok-bg);border-color:var(--ok-border)"><strong>Agent 执行</strong><span>修改、提交与创建 PR</span></div><div class="arrow" aria-hidden="true"></div><div class="flow-node"><strong>PR / 飞书</strong><span>审查交付与结果通知</span></div></div>
+   <div class="handoff-row"><div><strong>输入</strong>减少重复录入，带上任务上下文。</div><div><strong>交付建议</strong>结果附带说明与可核验的证据链接。</div><div><strong>阻塞处理</strong>明确负责人、升级路径和通知内容。</div></div>
+  </div>
+  <p class="takeaway">任务出现阻塞时，谁负责下一步？</p>
+  <p class="note"><strong>交付边界：</strong>当前交付进入 PR 人工审查，由团队决定合并。</p>
+  <details class="speaker-notes"><summary>讲解备注 <span>把技术流程接到团队责任上</span></summary><div class="speaker-body">
+   <p>SonarQube、PR 和飞书已经分别承担问题入口、审查交付和通知。自动化结果进入熟悉的入口，团队才能在原有工作流中接手。</p>
+   <p>交付信息可以进一步完善：PR 说明修改原因与范围，通知指向实际结果，有验证证据时提供链接。遇到阻塞，应写清谁来接手以及下一步需要做什么。完整证据管理是建议，不冒充当前已具备的能力。</p>
+   <p>把 Agent 作为一个有职责的执行角色：什么时候接收任务，向谁交付，失败通知谁，什么条件需要升级。可以邀请听众用自己的任务回答这些问题。</p>
+   <p class="source-line">资料：<a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial/blob/main/lessons/24-digital-employee.md" target="_blank" rel="noopener">岗位说明与责任</a><a href="https://github.com/TIMPICKLE/SonarqubeAutoFlow_MAF" target="_blank" rel="noopener">项目交付链路</a></p>
+  </div></details>
+ </section>
+
+ <footer class="colophon" id="colophon-section">
+  <div class="footer-links"><a href="https://github.com/TIMPICKLE/agent-orchestration-tutorial" target="_blank" rel="noopener">完整教程 ↗</a><a href="https://github.com/TIMPICKLE/SonarqubeAutoFlow_MAF" target="_blank" rel="noopener">SonarQube 项目 ↗</a><a href="https://github.com/QingYunA/agent-html" target="_blank" rel="noopener">设计参考：agent-html ↗</a></div>
+  <p>TIM · 2026-10-12 · 基于已确认的 10 页技术主题整理。当前实现以本次分享所读取的项目材料为依据，设计建议与教学示例已分别标识。</p>
+  <p>内容基准：agent-orchestration-tutorial @ 2eec7a3。设计采用 Agent HTML 的 Report 母版、Zinc 中性色和零依赖单文件规范。正文与图示可离线阅读，外部资料链接需联网。</p>
+  <div class="mini-actions"><button class="btn" id="exportMdBottom">下载 Markdown 提纲</button></div>
+ </footer>
+</main>
+</div>
+<div class="present-bar" aria-label="演示控制">
+ <div class="present-progress"><span class="mono" id="slideCounter">01 / 10</span><div class="progress-track" aria-hidden="true"><div id="progressFill"></div></div></div>
+ <span class="key-hints"><kbd>←</kbd> <kbd>→</kbd> 切换　<kbd>N</kbd> 备注　<kbd>P</kbd> 阅读模式</span>
+ <div class="present-actions"><button class="btn btn-icon" id="fullScreen" aria-label="切换全屏" title="切换全屏"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button><button class="btn" id="prevSlide">上一节</button><button class="btn btn-primary" id="nextSlide">下一节</button></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<dialog id="copyDialog" aria-labelledby="copyDialogTitle"><h3 id="copyDialogTitle">复制任务契约</h3><p>浏览器未允许自动复制。可以选中文本复制，或下载模板。</p><textarea id="copyText" readonly aria-label="任务契约模板"></textarea><div class="dialog-actions"><button class="btn" id="downloadContract">下载模板</button><button class="btn btn-primary" id="closeDialog">关闭</button></div></dialog>
+<script>
+(() => {
+ 'use strict';
+ const $ = id => document.getElementById(id);
+ const chapters = [...document.querySelectorAll('.chapter')];
+ const tocLinks = [...document.querySelectorAll('.toc-link')];
+ let current = 0, presenting = false, toastTimer;
+ const pad = n => String(n).padStart(2,'0');
+ function toast(message) { clearTimeout(toastTimer); $('toast').textContent=message; toastTimer=setTimeout(()=>{$('toast').textContent='';},2600); }
+ function markChapter(index) {
+  current=Math.max(0,Math.min(chapters.length-1,index));
+  chapters.forEach((s,i)=>s.classList.toggle('active',i===current));
+  tocLinks.forEach((a,i)=>{a.classList.toggle('active',i===current);if(i===current)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current');});
+  $('slideCounter').textContent=pad(current+1)+' / '+pad(chapters.length);
+  $('progressFill').style.width=((current+1)/chapters.length*100)+'%';
+  $('prevSlide').disabled=current===0; $('nextSlide').disabled=current===chapters.length-1;
+ }
+ function navigate(index,updateHash=true) {
+  markChapter(index);
+  if(updateHash){try{history.replaceState(null,'','#'+chapters[current].id);}catch(_){}}
+  if(presenting) window.scrollTo({top:0,behavior:'instant'}); else chapters[current].scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
+ }
+ function closeMenu(){document.body.classList.remove('menu-open');$('menuToggle').setAttribute('aria-expanded','false');}
+ function setPresentation(enabled){
+  presenting=enabled;closeMenu();document.body.classList.toggle('presenting',enabled);
+  $('presentToggle').setAttribute('aria-pressed',String(enabled));$('presentLabel').textContent=enabled?'阅读模式':'演示模式';
+  if(enabled){chapters.forEach(s=>s.querySelector('details').open=false);navigate(current);}else{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});chapters[current].scrollIntoView({block:'start',behavior:'instant'});}
+ }
+ $('presentToggle').addEventListener('click',()=>setPresentation(!presenting));
+ $('startPresentation').addEventListener('click',()=>{markChapter(0);setPresentation(true);});
+ $('prevSlide').addEventListener('click',()=>navigate(current-1));
+ $('nextSlide').addEventListener('click',()=>navigate(current+1));
+ $('menuToggle').addEventListener('click',()=>{const open=document.body.classList.toggle('menu-open');$('menuToggle').setAttribute('aria-expanded',String(open));});
+ tocLinks.forEach((a,i)=>a.addEventListener('click',e=>{e.preventDefault();navigate(i);closeMenu();}));
+ document.querySelector('.brand').addEventListener('click',e=>{if(presenting)setPresentation(false);closeMenu();});
+ $('themeToggle').addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;try{localStorage.setItem('tim-agent-theme',next);}catch(_){};});
+ $('printBtn').addEventListener('click',()=>window.print());
+ $('fullScreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else toast('此浏览器不支持全屏，可使用浏览器全屏快捷键。');}catch(_){toast('浏览器未允许全屏，演示模式仍可使用。');}});
+ let queued=false;
+ window.addEventListener('scroll',()=>{if(presenting||queued)return;queued=true;requestAnimationFrame(()=>{let index=0;chapters.forEach((s,i)=>{if(s.getBoundingClientRect().top<window.innerHeight*.4)index=i;});markChapter(index);queued=false;});},{passive:true});
+ window.addEventListener('hashchange',()=>{const i=chapters.findIndex(s=>'#'+s.id===location.hash);if(i>=0)navigate(i,false);});
+ document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea,select')||e.target.isContentEditable||$('copyDialog').open)return;
+  if(e.key==='Escape'){if(presenting)setPresentation(false);else closeMenu();return;}
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key.toLowerCase()==='p'){e.preventDefault();setPresentation(!presenting);}
+  if(presenting&&['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();navigate(current+1);}
+  if(presenting&&['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();navigate(current-1);}
+  if(presenting&&e.key==='Home'){e.preventDefault();navigate(0);}
+  if(presenting&&e.key==='End'){e.preventDefault();navigate(chapters.length-1);}
+  if(presenting&&e.key.toLowerCase()==='n'){e.preventDefault();const d=chapters[current].querySelector('details');d.open=!d.open;}
+ });
+ function download(name,text,type='text/markdown;charset=utf-8') {const blob=new Blob([text],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+ function markdown(){
+  const lines=['# Agent 编排与业务落地实践','', '以 SonarQube 代码异味自动修复系统为案例。TIM · 2026-10-12',''];
+  chapters.forEach((s,i)=>{
+   lines.push('## '+pad(i+1)+' '+s.querySelector('h2').textContent,'',s.querySelector('.lead').textContent,'');
+   const visual=s.querySelector('.export-content').cloneNode(true);
+   visual.querySelectorAll('button,.loop-console').forEach(n=>n.remove());
+   const values=[...visual.querySelectorAll('h3,strong,dt,dd,.rule,.diagram-label,.feedback-rail,td')].map(n=>n.textContent.trim()).filter(Boolean);
+   lines.push(...values.map(x=>'- '+x),'','> '+s.querySelector('.takeaway').textContent.trim(),'');
+   s.querySelectorAll(':scope > .note,:scope > .state-example').forEach(n=>lines.push(n.textContent.trim(),''));
+   lines.push('### 讲解备注','');
+   s.querySelectorAll('.speaker-body p:not(.source-line)').forEach(p=>lines.push(p.textContent.trim(),''));
+   const refs=[...s.querySelectorAll('.source-line a')].map(a=>'['+a.textContent+']('+a.href+')');lines.push('资料：'+refs.join(' · '),'');
+  });
+  lines.push('设计参考：https://github.com/QingYunA/agent-html');return lines.join('\n');
+ }
+ function exportMd(){download('Agent编排与业务落地实践_提纲.md',markdown());toast('已导出 10 个主题与讲解备注。');}
+ $('exportMd').addEventListener('click',exportMd);$('exportMdBottom').addEventListener('click',exportMd);
+ const contract={
+  '示例性质':'任务契约模板，请按实际业务补充',
+  '输入':{'异味Key':'<填写>','仓库':'<填写>','代码基线':'<commit SHA>'},
+  '交付':['候选补丁','PR 链接','修改原因与范围说明'],
+  '验收证据':{'适用检查':['<编译 / 针对性测试 / Sonar 复扫 / 范围审查>'],'绑定版本':'<候选 commit SHA>','结果记录':'<检查名称、结果与产物链接>'},
+  '能力边界':{'允许动作':['<填写>'],'工作区':'<填写>','外部动作授权':'<推送 / 创建 PR / 合并等分别约定>'},
+  '停止条件':['权限不足','环境阻塞','时间、轮数或成本预算耗尽'],
+  '阻塞交接':{'已完成':'<填写>','缺少条件':'<填写>','负责人':'<填写>'}
+ };
+ const contractText=JSON.stringify(contract,null,2);
+ $('copyContract').addEventListener('click',async()=>{try{if(!navigator.clipboard)throw new Error('Clipboard unavailable');await navigator.clipboard.writeText(contractText);toast('任务契约模板已复制。');}catch(_){$('copyText').value=contractText;$('copyDialog').showModal();$('copyText').focus();$('copyText').select();}});
+ $('downloadContract').addEventListener('click',()=>download('任务契约模板.json',contractText,'application/json;charset=utf-8'));
+ $('closeDialog').addEventListener('click',()=>$('copyDialog').close());
+ let step=0,round=1,finished=false;
+ const stages=[...$('loopStages').children];
+ function showLoop(){
+  const scenario=$('loopScenario').value;
+  stages.forEach((el,i)=>{el.classList.toggle('active',i===step&&!finished);el.classList.toggle('done',i<step||finished);});
+  let titles=['读取：定位异味涉及的代码','行动：在授权工作区内形成候选补丁','观察：接收工具与验证结果','判断：检查验收、阻塞与剩余预算'];
+  let desc=['教学演示，不调用模型，不修改仓库。','工具动作应在执行前检查范围与权限。',scenario==='pass'?'相关验证通过，接下来核对任务契约。':scenario==='retry'?'示例断言失败，需要根据反馈调整方案。':'示例预算已用尽，保留产物与检查记录。',scenario==='pass'?'满足约定的验收条件，可以交付。':scenario==='retry'?'未满足验收，仍有预算，将反馈带入下一轮。':'停止继续执行，报告阻塞与接手信息。'];
+  $('loopTitle').textContent=titles[step];$('loopDetail').textContent=desc[step];
+  $('loopBadge').className='badge';$('loopBadge').textContent='第 '+round+' 轮 · '+(step+1)+' / 4';
+  $('loopNext').disabled=finished;$('loopNext').textContent=step===3?(scenario==='retry'?'进入下一轮':'确认退出'):'下一步';
+  if(finished){$('loopBadge').className='badge '+(scenario==='pass'?'current':'future');$('loopBadge').textContent=scenario==='pass'?'已交付（示例）':'已停止（示例）';$('loopTitle').textContent=scenario==='pass'?'交付：候选补丁与对应验证记录':'阻塞：预算耗尽，等待接手';$('loopDetail').textContent='教学演示已结束。可以切换结果或重置。';}
+ }
+ $('loopNext').addEventListener('click',()=>{if(finished)return;if(step<3)step++;else if($('loopScenario').value==='retry'){step=0;round++;}else finished=true;showLoop();});
+ function resetLoop(){step=0;round=1;finished=false;showLoop();}
+ $('loopReset').addEventListener('click',resetLoop);$('loopScenario').addEventListener('change',resetLoop);
+ const initial=chapters.findIndex(s=>'#'+s.id===location.hash);markChapter(initial>=0?initial:0);showLoop();
+})();
+</script>
+</body>
+</html>
